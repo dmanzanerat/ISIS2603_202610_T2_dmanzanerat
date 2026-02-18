@@ -11,8 +11,8 @@
 | **Escenario**                 | **Estado Inicial (BD)**                     | **Acción (Input)**                                | **Resultado Esperado (Output/BD)**                                                                        |
 | ----------------------------- | ------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | **Éxito: Crear un bolsillo**  | Existe Cuenta #123 (Saldo: 1000)            | Crear Bolsillo "Ahorro" (Monto: 0) en Cuenta #123 | 1. Se crea el objeto Bolsillo.<br>2. Se guarda en la BD.<br>3. Retorna la entidad creada.         |
-| **Fallo: Cuenta Inexistente** | No existe la cuenta #999                    | Crear Bolsillo en Cuenta #999                     | Lanza Excepción:EntityNotFoundException.                                                          |
-| **Fallo: Cuenta Bloqueada**   | Existe Cuenta #123 con estado “BLOQUEADA”   | Crear Bolsillo "Ahorro" en Cuenta #123            | Lanza Excepción:BusinessLogicException("La cuenta está bloqueada"). <br> No guarda nada nuevo. |
+| **Fallo: Cuenta Inexistente** | No existe la cuenta #999                    | Crear Bolsillo en Cuenta #999                     | Lanza Excepción: EntityNotFoundException.                                                          |
+| **Fallo: Cuenta Bloqueada**   | Existe Cuenta #123 con estado “BLOQUEADA”   | Crear Bolsillo "Ahorro" en Cuenta #123            | Lanza Excepción: BusinessLogicException("La cuenta está bloqueada"). <br> No guarda nada nuevo. |
 | **Fallo: Duplicado**          | Existe Cuenta #123 con un Bolsillo "Ahorro" | Crear Bolsillo "Ahorro" en Cuenta #123            | Lanza Excepción: BusinessLogicException ("El nombre ya existe").<br>No guarda nada nuevo.             |
 
 
