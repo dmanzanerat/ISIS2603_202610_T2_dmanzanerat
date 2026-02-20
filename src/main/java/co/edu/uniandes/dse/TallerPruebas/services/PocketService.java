@@ -27,6 +27,8 @@ public class PocketService {
     @Autowired
     private AccountRepository accountRepository;
 
+
+
     /**
      * Crea un bolsillo para una cuenta.
      * 
@@ -62,5 +64,60 @@ public class PocketService {
         pocketEntity.setAccount(accountEntity.get());
         log.info("Termina proceso de creación de un bolsillo para la cuenta con id = {}", accountId);
         return pocketRepository.save(pocketEntity);
+    }
+
+    /**
+     * Carga dinero a un bolsillo
+     *
+     * @param accountId id de la cuenta origen
+     * @param pocketId id del bolsillo
+     * @param monto cantidad a cargar
+     * @return la entidad del bolsillo actualizada
+     * @throws EntityNotFoundException si la cuenta o el bolsillo no existen
+     * @throws BusinessLogicException si el saldo es insuficiente o el monto es inválido
+     */
+    @Transactional
+    public PocketEntity cargarBolsillo(Long accountId, Long pocketId, Double monto) throws EntityNotFoundException, BusinessLogicException {
+        log.info("Inicia proceso de mover dinero de la cuenta {} al bolsillo {}", accountId, pocketId);
+
+        // 1. validar que el monto sea mayor a cero (y menor a infinito)
+        if (monto <= 0 || monto.isInfinite()) {
+            throw new BusinessLogicException("El monto de carga debe ser mayor a cero");
+        }
+
+        // 2. validar que la cuenta existe usando Optional
+        Optional<AccountEntity> accountEntity = accountRepository.findById(accountId);
+        if (accountEntity.isEmpty()) {
+            throw new EntityNotFoundException("La cuenta no existe");
+        }
+
+        // 3. validar que el bolsillo existe
+        Optional<PocketEntity> pocketEntity = pocketRepository.findById(pocketId);
+        if (pocketEntity.isEmpty()) {
+            throw new EntityNotFoundException("El bolsillo no existe");
+        }
+
+        // 4. validar que el bolsillo pertenezca a la cuenta
+        if (!pocketEntity.get().getAccount().getId().equals(accountId)) {
+            throw new BusinessLogicException("El bolsillo no pertenece a la cuenta especificada");
+        }
+
+        // 5. validar que el saldo de la cuenta sea menor o igual al monto
+        if (accountEntity.get().getSaldo() < monto) {
+            throw new BusinessLogicException("El monto de la transferencia debe ser menor o igual al saldo de la cuenta"); // [cite: 82]
+        }
+
+        // 6. restar el monto de la cuenta
+        accountEntity.get().setSaldo(accountEntity.get().getSaldo() - monto);
+
+        // 7. Sumar el monto al bolsillo
+        Double saldoActualBolsillo = pocketEntity.get().getSaldo() != null ? pocketEntity.get().getSaldo() : 0.0;
+        pocketEntity.get().setSaldo(saldoActualBolsillo + monto);
+
+        // 8. persistir los cambios en la BD
+        accountRepository.save(accountEntity.get());
+
+        log.info("Termina proceso de mover dinero al bolsillo {} con éxito", pocketId);
+        return pocketRepository.save(pocketEntity.get());
     }
 }

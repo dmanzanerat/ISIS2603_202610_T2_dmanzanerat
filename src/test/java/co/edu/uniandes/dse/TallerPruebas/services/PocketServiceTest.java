@@ -67,7 +67,6 @@ public class PocketServiceTest {
             entityManager.persist(accountEntity);
             accountList.add(accountEntity);
         }
-
         for (int i = 0; i < 3; i++) {
             PocketEntity pocketEntity = factory.manufacturePojo(PocketEntity.class);
             pocketEntity.setAccount(accountList.get(0));
@@ -132,6 +131,82 @@ public class PocketServiceTest {
             newEntity.setNombre(pocketList.get(0).getNombre());
             
             pocketService.createPocket(account.getId(), newEntity);
+        });
+    }
+
+    /**
+     * Prueba para mover dinero de la cuenta a un bolsillo con éxito.
+     */
+    @Test
+    void testCargarBolsillo() throws EntityNotFoundException, BusinessLogicException {
+        AccountEntity account = accountList.get(0);
+        Double initialAccountBalance = 5000.0;
+        account.setSaldo(initialAccountBalance);
+        entityManager.merge(account);
+
+        PocketEntity pocket = pocketList.get(0);
+        Double initialPocketBalance = 0.0;
+        pocket.setSaldo(initialPocketBalance);
+        entityManager.merge(pocket);
+
+        Double amountToLoad = 1500.0;
+
+        PocketEntity result = pocketService.cargarBolsillo(account.getId(), pocket.getId(), amountToLoad);
+
+        AccountEntity updatedAccount = entityManager.find(AccountEntity.class, account.getId());
+        assertEquals(initialAccountBalance - amountToLoad, updatedAccount.getSaldo());
+        assertEquals(initialPocketBalance + amountToLoad, result.getSaldo());
+    }
+
+    /**
+     * Prueba para mover dinero con saldo insuficiente en la cuenta.
+     */
+    @Test
+    void testCargarBolsilloFondosInsuficientes() {
+        assertThrows(BusinessLogicException.class, () -> {
+            AccountEntity account = accountList.get(0);
+            account.setSaldo(5000.0);
+            entityManager.merge(account);
+
+            PocketEntity pocket = pocketList.get(0);
+            Double amountToLoad = 6000.0;
+
+            pocketService.cargarBolsillo(account.getId(), pocket.getId(), amountToLoad);
+        });
+    }
+
+    /**
+     * Prueba para mover dinero a un bolsillo que no existe.
+     */
+    @Test
+    void testCargarBolsilloInexistente() {
+        assertThrows(EntityNotFoundException.class, () -> {
+            AccountEntity account = accountList.get(0);
+            pocketService.cargarBolsillo(account.getId(), 0L, 1500.0);
+        });
+    }
+
+    /**
+     * Prueba para mover un monto negativo.
+     */
+    @Test
+    void testCargarBolsilloMontoNegativo() {
+        assertThrows(BusinessLogicException.class, () -> {
+            AccountEntity account = accountList.get(0);
+            PocketEntity pocket = pocketList.get(0);
+
+            pocketService.cargarBolsillo(account.getId(), pocket.getId(), -500.0);
+        });
+    }
+
+    /**
+     * Prueba para mover dinero desde una cuenta que no existe.
+     */
+    @Test
+    void testCargarBolsilloCuentaInexistente() {
+        assertThrows(EntityNotFoundException.class, () -> {
+            PocketEntity pocket = pocketList.get(0);
+            pocketService.cargarBolsillo(0L, pocket.getId(), 100.0);
         });
     }
 }
